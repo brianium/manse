@@ -5,6 +5,7 @@ classes/
 *.class
 pom.xml
 pom.xml.asc
+.claude/settings.local.json
 
 # Clojure tools
 .cpcache/
@@ -12,6 +13,7 @@ pom.xml.asc
 .lsp/
 # Ignore root .clj-kondo cache (config.edn can still be tracked)
 .clj-kondo/.cache/
+.clj-kondo/imports/
 # Ignore .clj-kondo directories created in subdirectories
 */**/.clj-kondo/
 
