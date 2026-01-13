@@ -14,7 +14,8 @@
    (registry {:datasource my-ds})"
   [{:keys [datasource]}]
   (when-not datasource
-    (throw (ex-info "Manse registry requires a :datasource" {})))
+    (throw (ex-info "Manse registry requires a :datasource option. Provide a javax.sql.DataSource created via next.jdbc/get-datasource or a connection pool."
+                    {:required-keys [:datasource]})))
   {::s/effects
    {::execute          (effects/create-execute datasource)
     ::execute-one      (effects/create-execute-one datasource)

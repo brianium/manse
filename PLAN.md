@@ -245,7 +245,7 @@ All effects accept an optional `:connectable` in the opts map to override the re
 
 ## Implementation Phases
 
-### Phase 1: Core Foundation
+### Phase 1: Core Foundation [COMPLETE]
 1. Set up project structure and dependencies
 2. Implement `::manse/execute` effect with schema
 3. Implement `::manse/results` placeholder
@@ -253,20 +253,21 @@ All effects accept an optional `:connectable` in the opts map to override the re
 5. Unit tests for schema validation
 6. Integration test with SQLite
 
-### Phase 2: Complete Core Effects
+### Phase 2: Complete Core Effects [COMPLETE]
 1. Implement `::manse/execute-one` and `::manse/result`
 2. Implement `::manse/plan` and `::manse/reducible`
 3. Integration tests for all core effects
 
-### Phase 3: Transactions
+### Phase 3: Transactions [COMPLETE]
 1. Implement `::manse/with-transaction`
-2. Connectable override in opts
+2. Connectable override via `::manse/connectable` in dispatch-data
 3. Transaction isolation/rollback options
 4. Integration tests for commit/rollback behavior
 
-### Phase 4: Polish
+### Phase 4: Polish [COMPLETE]
 1. Comprehensive schema descriptions for discoverability
-2. Edge case handling and error messages
+2. Edge case handling and improved error messages
+3. Schema tests for transaction-opts
 
 ## Future Considerations (Out of Scope for Now)
 
@@ -277,8 +278,8 @@ All effects accept an optional `:connectable` in the opts map to override the re
 
 ## Open Questions
 
-1. **Nested transaction semantics:** Should nested `::with-transaction` create savepoints, or reuse the outer transaction? Investigate next.jdbc's nesting behavior.
+1. **Nested transaction semantics:** Should nested `::with-transaction` create savepoints, or reuse the outer transaction? Current implementation reuses the outer connection via `::manse/connectable` in dispatch-data.
 
-2. **Result placeholder scoping:** If multiple `::execute` effects run in sequence, does `::results` return the most recent? Should we support indexed access like `[::manse/results 0]`?
+2. **Result placeholder scoping:** Currently `::results` returns the most recent result from dispatch-data. Indexed access could be added as a future enhancement.
 
-3. **Plan consumption:** Should `::manse/plan` dispatch continuation immediately with the reducible, or wait until it's consumed? The reducible holds a connection open until fully reduced.
+3. **Plan consumption:** Currently `::manse/plan` dispatches continuation immediately with the reducible. Users should be aware that the reducible holds a connection open until fully reduced.
