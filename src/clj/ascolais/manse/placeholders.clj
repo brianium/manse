@@ -19,30 +19,35 @@
     [[::process-users [::manse/results]]]]"
 
    ::s/schema [:vector :map]
-   ::s/handler (fn [dispatch-data]
+   ::s/handler (fn [dispatch-data & _]
                  (or (::manse/results dispatch-data)
                      [::manse/results]))})
 
 (def result
   "Placeholder returning single result map (or nil) from most recent ::manse/execute-one.
-   Self-preserving for continuation patterns - returns itself if data not yet available."
+   Self-preserving for continuation patterns - returns itself if data not yet available.
+   Accepts optional key argument to extract a specific field."
   {::s/description
    "Access result from ::manse/execute-one in continuation effects.
 
-   Returns: Single hash map or nil from the most recent execute-one effect
+   Returns: Single hash map or nil from the most recent execute-one effect.
+   With key argument, returns the value at that key.
 
-   Self-preserving: Returns itself [::manse/result] if data not yet available,
-   allowing it to survive initial interpolation and resolve in continuation dispatch.
+   Self-preserving: Returns itself [::manse/result] or [::manse/result key] if data
+   not yet available, allowing it to survive initial interpolation.
 
-   Example:
-   [::manse/execute-one [\"SELECT * FROM users WHERE id = ?\" 1] {}
-    [[::send-email [::manse/result]]]]"
+   Examples:
+   [::manse/result]      ;; returns full result map
+   [::manse/result :id]  ;; returns value at :id key"
 
-   ::s/schema [:maybe :map]
-   ::s/handler (fn [dispatch-data]
+   ::s/schema :any
+   ::s/handler (fn [dispatch-data & [key]]
                  (if (contains? dispatch-data ::manse/result)
-                   (::manse/result dispatch-data)
-                   [::manse/result]))})
+                   (let [res (::manse/result dispatch-data)]
+                     (if key (get res key) res))
+                   (if key
+                     [::manse/result key]
+                     [::manse/result])))})
 
 (def reducible
   "Placeholder returning reducible from most recent ::manse/plan.
@@ -62,7 +67,7 @@
     [[::batch-process [::manse/reducible]]]]"
 
    ::s/schema :any
-   ::s/handler (fn [dispatch-data]
+   ::s/handler (fn [dispatch-data & _]
                  (if (contains? dispatch-data ::manse/reducible)
                    (::manse/reducible dispatch-data)
                    [::manse/reducible]))})
