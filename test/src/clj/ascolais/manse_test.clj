@@ -129,7 +129,16 @@
                                             {}
                                             [[::capture [::manse/result]]]]])]
         (is (empty? errors))
-        (is (nil? @*captured))))))
+        (is (nil? @*captured))))
+
+    (testing "result placeholder with key extracts specific field"
+      (reset! *captured nil)
+      (let [{:keys [errors]} (dispatch {} [[::manse/execute-one
+                                            ["SELECT * FROM users WHERE name = ?" "alice"]
+                                            {}
+                                            [[::capture [::manse/result :users/name]]]]])]
+        (is (empty? errors))
+        (is (= "alice" @*captured))))))
 
 (deftest plan-effect-test
   (let [dispatch (s/create-dispatch [(manse/registry {:datasource *datasource*})])]
