@@ -16,7 +16,11 @@
   (when-not datasource
     (throw (ex-info "Manse registry requires a :datasource" {})))
   {::s/effects
-   {::execute (effects/create-execute datasource)}
+   {::execute     (effects/create-execute datasource)
+    ::execute-one (effects/create-execute-one datasource)
+    ::plan        (effects/create-plan datasource)}
 
    ::s/placeholders
-   {::results placeholders/results}})
+   {::results   placeholders/results
+    ::result    placeholders/result
+    ::reducible placeholders/reducible}})
