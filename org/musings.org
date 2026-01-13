@@ -1,0 +1,61 @@
+#+title: Musings on Clojure Library Manse
+
+Muse is a [[https://github.com/brianium/sandestin][Sandestin]] library on top of [[https://github.com/seancorfield/next-jdbc][next.jdbc]]. It exposes a set of effects for interacting
+with databases. The main namespace is =ascolais.manse=
+
+** Goal
+
+To have a Sandestin library that allows users to craft effect vectors for querying databases
+and access the results of those operations through placeholders.
+
+*** Requirements
+
+- postgres and sqlite support to start
+- supports efficient connection management
+- strong Sandestin schemas and descriptions
+- supports transactions
+- supports connection pooling
+- supports json columns out of the box (powered by [[https://github.com/cnuernber/charred][Charred]])
+- covers the entire surface of the next.jdbc API (just exposes them as vector effects for Sandestin)
+- test coverage (unit tests and integration tests at least covering sqlite) - My reasoning here is that next.jdbc itself is very well tested against different drivers, I don't need a full driver suite
+
+*** Nice to haves
+
+- Effects/Actions covering the "Friendly Sql Functions" in the next.jdbc.sql namespace (insert!, insert-multi!, query, update!, delete!, find-by-keys, get-by-id, etc..)
+
+** Potential API
+
+#+begin_src clojure
+  (dispatch [[::db/execute ["SELECT * FROM table WHERE id = ?" 1] {:builder-fn some-builder}
+              [::some-other-effect
+               [::db/results]]]])
+            
+  (dispatch [[::db/execute-one ["INSERT INTO table(name,email) VALUES (?,?)" "brian" "brian@email.com"] {:builder-fn some-builder}
+              [::some-other-effect
+               [::db/result]]]])  
+#+end_src
+
+I think I will want an effect that works with next.jdbc/plan in some novel way. We can iterate on this concept.
+
+next.jdbc/plan is described as:
+
+While the execute! and execute-one! functions are fine for retrieving result sets as data, most of the time you want to process that data efficiently without necessarily
+converting the entire result set into a Clojure data structure, so next.jdbc provides a SQL execution function that works with reduce and with transducers to consume the result
+set without the intermediate overhead of creating Clojure data structures for every row
+
+Example from next.jdbc:
+
+#+begin_src clojure
+  (reduce
+   (fn [cost row]
+     (+ cost (* (:unit_price row)
+                (:unit_count row))))
+   0
+   (jdbc/plan ds ["select * from invoice where customer_id = ?" 100]))
+#+end_src
+
+** References
+
+- [[https://cljdoc.org/d/com.github.seancorfield/next.jdbc/1.3.1086/doc/getting-started][next.jdbc developer documentation]]
+- /Users/brian/projects/sandestin/ (Sandestin source)
+- /Users/brian/projects/twk/ (Example library built on Sandestin)
