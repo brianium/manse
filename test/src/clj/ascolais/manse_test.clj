@@ -170,3 +170,83 @@
         (is (some? @*captured))
         ;; Verify it's reducible
         (is (= 2 (reduce (fn [acc _] (inc acc)) 0 @*captured)))))))
+
+(deftest with-transaction-commit-test
+  (let [dispatch (s/create-dispatch [(manse/registry {:datasource *datasource*})])]
+
+    (testing "transaction commits on success"
+      ;; Insert within transaction
+      (let [{:keys [errors]} (dispatch {} [[::manse/with-transaction
+                                            [[::manse/execute-one
+                                              ["INSERT INTO users(name, email) VALUES(?, ?)"
+                                               "charlie" "charlie@example.com"]]]]])]
+        (is (empty? errors)))
+      ;; Verify the insert persisted
+      (let [{:keys [results]} (dispatch {} [[::manse/execute-one
+                                             ["SELECT * FROM users WHERE name = ?" "charlie"]]])]
+        (is (= "charlie" (-> results first :res :users/name)))))
+
+    (testing "multiple operations in transaction"
+      (let [{:keys [errors]} (dispatch {} [[::manse/with-transaction
+                                            [[::manse/execute-one
+                                              ["INSERT INTO users(name, email) VALUES(?, ?)"
+                                               "dave" "dave@example.com"]]
+                                             [::manse/execute-one
+                                              ["INSERT INTO users(name, email) VALUES(?, ?)"
+                                               "eve" "eve@example.com"]]]]])]
+        (is (empty? errors)))
+      ;; Verify both inserts persisted
+      (let [{:keys [results]} (dispatch {} [[::manse/execute
+                                             ["SELECT * FROM users WHERE name IN (?, ?)"
+                                              "dave" "eve"]]])]
+        (is (= 2 (count (-> results first :res))))))))
+
+(deftest with-transaction-rollback-test
+  (let [failing-effect {:ascolais.sandestin/description "Always fails"
+                        :ascolais.sandestin/schema [:tuple [:= ::fail]]
+                        :ascolais.sandestin/handler (fn [_ _]
+                                                      (throw (ex-info "Intentional failure" {})))}
+        dispatch (s/create-dispatch [(manse/registry {:datasource *datasource*})
+                                     {:ascolais.sandestin/effects
+                                      {::fail failing-effect}}])]
+
+    (testing "transaction rolls back on error"
+      ;; Get initial count
+      (let [{:keys [results]} (dispatch {} [[::manse/execute
+                                             ["SELECT COUNT(*) as cnt FROM users"]]])]
+        (let [initial-count (-> results first :res first :cnt)]
+          ;; Try to insert then fail - should rollback
+          (let [{:keys [errors]} (dispatch {} [[::manse/with-transaction
+                                                [[::manse/execute-one
+                                                  ["INSERT INTO users(name, email) VALUES(?, ?)"
+                                                   "failing" "failing@example.com"]]
+                                                 [::fail]]]])]
+            (is (seq errors)))
+          ;; Verify the insert was rolled back
+          (let [{:keys [results]} (dispatch {} [[::manse/execute
+                                                 ["SELECT COUNT(*) as cnt FROM users"]]])]
+            (is (= initial-count (-> results first :res first :cnt)))))))))
+
+(deftest with-transaction-placeholder-test
+  (let [*captured (atom nil)
+        capture-effect {:ascolais.sandestin/description "Captures data for testing"
+                        :ascolais.sandestin/schema [:tuple [:= ::capture] :any]
+                        :ascolais.sandestin/handler (fn [_ _ data]
+                                                      (reset! *captured data)
+                                                      :captured)}
+        dispatch (s/create-dispatch [(manse/registry {:datasource *datasource*})
+                                     {:ascolais.sandestin/effects
+                                      {::capture capture-effect}}])]
+
+    (testing "placeholders work within transactions"
+      (let [{:keys [errors]} (dispatch {} [[::manse/with-transaction
+                                            [[::manse/execute-one
+                                              ["INSERT INTO users(name, email) VALUES(?, ?)"
+                                               "frank" "frank@example.com"]
+                                              {:return-keys true}
+                                              [[::capture [::manse/result]]]]]]])]
+        (is (empty? errors))
+        (is (some? @*captured))
+        ;; SQLite returns :last_insert_rowid(), other DBs return :users/id
+        (is (or (contains? @*captured :users/id)
+                (contains? @*captured (keyword "last_insert_rowid()"))))))))

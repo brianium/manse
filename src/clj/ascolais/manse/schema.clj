@@ -15,3 +15,11 @@
    [:table-fn {:optional true} :any]
    [:label-fn {:optional true} :any]
    [:qualifier-fn {:optional true} :any]])
+
+(def transaction-opts
+  "Options for with-transaction effect."
+  [:map
+   [:isolation {:optional true} [:enum :read-uncommitted :read-committed
+                                 :repeatable-read :serializable]]
+   [:read-only {:optional true} :boolean]
+   [:rollback-only {:optional true} :boolean]])

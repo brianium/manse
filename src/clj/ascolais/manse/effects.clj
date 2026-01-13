@@ -15,8 +15,10 @@
                [:? schema/execute-opts]
                [:? [:vector :any]]]
    ::s/handler
-   (fn [{:keys [dispatch]} _ sql-params & [opts continuation-fx]]
-     (let [connectable (or (:connectable opts) datasource)
+   (fn [{:keys [dispatch dispatch-data]} _ sql-params & [opts continuation-fx]]
+     (let [connectable (or (:connectable opts)
+                           (::manse/connectable dispatch-data)
+                           datasource)
            jdbc-opts   (dissoc opts :connectable)
            results     (jdbc/execute! connectable sql-params jdbc-opts)]
        (when (seq continuation-fx)
@@ -33,8 +35,10 @@
                [:? schema/execute-opts]
                [:? [:vector :any]]]
    ::s/handler
-   (fn [{:keys [dispatch]} _ sql-params & [opts continuation-fx]]
-     (let [connectable (or (:connectable opts) datasource)
+   (fn [{:keys [dispatch dispatch-data]} _ sql-params & [opts continuation-fx]]
+     (let [connectable (or (:connectable opts)
+                           (::manse/connectable dispatch-data)
+                           datasource)
            jdbc-opts   (dissoc opts :connectable)
            result      (jdbc/execute-one! connectable sql-params jdbc-opts)]
        (when (seq continuation-fx)
@@ -51,10 +55,34 @@
                [:? schema/execute-opts]
                [:? [:vector :any]]]
    ::s/handler
-   (fn [{:keys [dispatch]} _ sql-params & [opts continuation-fx]]
-     (let [connectable (or (:connectable opts) datasource)
+   (fn [{:keys [dispatch dispatch-data]} _ sql-params & [opts continuation-fx]]
+     (let [connectable (or (:connectable opts)
+                           (::manse/connectable dispatch-data)
+                           datasource)
            jdbc-opts   (dissoc opts :connectable)
            reducible   (jdbc/plan connectable sql-params jdbc-opts)]
        (when (seq continuation-fx)
          (dispatch {::manse/reducible reducible} continuation-fx))
        reducible))})
+
+(defn create-with-transaction
+  "Creates the with-transaction effect handler with the given datasource."
+  [datasource]
+  {::s/description "Execute nested effects within a database transaction. Commits on success, rolls back on any error."
+   ::s/schema [:tuple
+               [:= ::manse/with-transaction]
+               [:vector :any]
+               [:? schema/transaction-opts]]
+   ::s/handler
+   (fn [{:keys [dispatch dispatch-data]} _ nested-fx & [opts]]
+     (let [connectable (or (::manse/connectable dispatch-data) datasource)]
+       (jdbc/transact
+        connectable
+        (fn [tx]
+          (let [{:keys [errors] :as result}
+                (dispatch {::manse/connectable tx} nested-fx)]
+            (when (seq errors)
+              (throw (ex-info "Transaction rolled back due to errors"
+                              {:errors errors})))
+            result))
+        opts)))})
