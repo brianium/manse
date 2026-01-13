@@ -57,10 +57,10 @@ clj-nrepl-eval --discover-ports          # Find running REPLs
 clj-nrepl-eval -p <PORT> "(+ 1 2 3)"     # Evaluate expression
 ```
 
-Always use `:reload` when requiring namespaces to pick up changes:
+To reload changed namespaces, use `(dev/reload)` from the dev namespace:
 
 ```bash
-clj-nrepl-eval -p <PORT> "(require '[ascolais.manse] :reload)"
+clj-nrepl-eval -p <PORT> "(dev/reload)"
 ```
 
 ## Running Tests
@@ -116,3 +116,58 @@ Examples:
 - `feat: add user authentication`
 - `fix: resolve nil pointer in data parser`
 - `refactor: simplify database connection logic`
+
+## Sandestin Usage
+
+Sandestin is the effect dispatch library used by Manse. Key concepts:
+
+### Creating a Dispatch Function
+
+`create-dispatch` takes a **sequence** of registries (not a single registry):
+
+```clojure
+(require '[ascolais.sandestin :as s])
+(require '[ascolais.manse :as manse])
+
+;; Create a registry
+(def reg (manse/registry {:datasource ds}))
+
+;; Create dispatch - note the vector wrapping the registry
+(def dispatch (s/create-dispatch [reg]))
+```
+
+### Discoverability Functions
+
+These functions operate on the **dispatch function**, not the registry:
+
+```clojure
+;; Describe all registered items
+(s/describe dispatch)
+
+;; Describe a specific effect/placeholder
+(s/describe dispatch ::manse/execute)
+
+;; Describe by type
+(s/describe dispatch :effects)
+(s/describe dispatch :placeholders)
+
+;; Search by text in descriptions
+(s/grep dispatch "transaction")
+
+;; Generate sample data from schema
+(s/sample dispatch ::manse/execute)
+```
+
+### Registry Structure
+
+Registries are maps with `::s/effects` and `::s/placeholders` keys:
+
+```clojure
+{::s/effects      {::key effect-definition ...}
+ ::s/placeholders {::key placeholder-definition ...}}
+```
+
+Each effect/placeholder definition includes:
+- `::s/description` - human-readable description
+- `::s/schema` - Malli schema for validation
+- `::s/handler` - the handler function
