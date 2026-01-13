@@ -5,23 +5,29 @@
 
 (def results
   "Placeholder returning vector of result maps from most recent ::manse/execute.
-   Self-preserving for continuation patterns - returns itself if data not yet available."
+   Self-preserving for continuation patterns - returns itself if data not yet available.
+   Accepts optional key argument to extract a specific field from each result."
   {::s/description
    "Access results from ::manse/execute in continuation effects.
 
-   Returns: Vector of hash maps from the most recent execute effect
+   Returns: Vector of hash maps from the most recent execute effect.
+   With key argument, returns vector of values at that key from each result.
 
-   Self-preserving: Returns itself [::manse/results] if data not yet available,
-   allowing it to survive initial interpolation and resolve in continuation dispatch.
+   Self-preserving: Returns itself [::manse/results] or [::manse/results key] if data
+   not yet available, allowing it to survive initial interpolation.
 
-   Example:
-   [::manse/execute [\"SELECT * FROM users\"] {}
-    [[::process-users [::manse/results]]]]"
+   Examples:
+   [::manse/results]           ;; returns vector of result maps
+   [::manse/results :users/id] ;; returns vector of id values"
 
-   ::s/schema [:vector :map]
-   ::s/handler (fn [dispatch-data & _]
-                 (or (::manse/results dispatch-data)
-                     [::manse/results]))})
+   ::s/schema :any
+   ::s/handler (fn [dispatch-data & [key]]
+                 (if (contains? dispatch-data ::manse/results)
+                   (let [res (::manse/results dispatch-data)]
+                     (if key (mapv #(get % key) res) res))
+                   (if key
+                     [::manse/results key]
+                     [::manse/results])))})
 
 (def result
   "Placeholder returning single result map (or nil) from most recent ::manse/execute-one.

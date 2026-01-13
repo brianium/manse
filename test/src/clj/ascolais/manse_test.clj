@@ -78,7 +78,16 @@
         (is (empty? errors))
         (is (vector? @*captured))
         (is (= 1 (count @*captured)))
-        (is (= "alice" (:users/name (first @*captured))))))))
+        (is (= "alice" (:users/name (first @*captured))))))
+
+    (testing "results placeholder with key extracts field from each result"
+      (reset! *captured nil)
+      (let [{:keys [errors]} (dispatch {} [[::manse/execute
+                                            ["SELECT * FROM users ORDER BY name"]
+                                            {}
+                                            [[::capture [::manse/results :users/name]]]]])]
+        (is (empty? errors))
+        (is (= ["alice" "bob"] @*captured))))))
 
 (deftest execute-one-effect-test
   (let [dispatch (s/create-dispatch [(manse/registry {:datasource *datasource*})])]
