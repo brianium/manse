@@ -176,6 +176,6 @@ Manse works with any `javax.sql.DataSource`, including connection pools:
 
 ## License
 
-Copyright 2024 Brian Scaturro
+Copyright 2026 Brian Scaturro
 
 Distributed under the Eclipse Public License version 2.0.
