@@ -20,7 +20,9 @@
    [::manse/results]           ;; returns vector of result maps
    [::manse/results :users/id] ;; returns vector of id values"
 
-   ::s/schema :any
+   ::s/schema [:or
+               [:tuple [:= ::manse/results]]
+               [:tuple [:= ::manse/results] :keyword]]
    ::s/handler (fn [dispatch-data & [key]]
                  (if (contains? dispatch-data ::manse/results)
                    (let [res (::manse/results dispatch-data)]
@@ -46,7 +48,9 @@
    [::manse/result]      ;; returns full result map
    [::manse/result :id]  ;; returns value at :id key"
 
-   ::s/schema :any
+   ::s/schema [:or
+               [:tuple [:= ::manse/result]]
+               [:tuple [:= ::manse/result] :keyword]]
    ::s/handler (fn [dispatch-data & [key]]
                  (if (contains? dispatch-data ::manse/result)
                    (let [res (::manse/result dispatch-data)]
@@ -72,7 +76,7 @@
    [::manse/plan [\"SELECT * FROM large_table\"] {}
     [[::batch-process [::manse/reducible]]]]"
 
-   ::s/schema :any
+   ::s/schema [:tuple [:= ::manse/reducible]]
    ::s/handler (fn [dispatch-data & _]
                  (if (contains? dispatch-data ::manse/reducible)
                    (::manse/reducible dispatch-data)
