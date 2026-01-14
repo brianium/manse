@@ -153,28 +153,36 @@ Wraps nested effects in a database transaction. Commits on success, rolls back o
 
 ## Placeholders
 
+Placeholder schemas describe the input signature (like effects) for consistent validation and sample generation.
+
 ### `::manse/results`
 
-Returns vector of result maps from most recent `::manse/execute`.
+Returns vector of result maps from most recent `::manse/execute`. Supports optional key extraction.
 
 ```clojure
-;; Schema
-[:vector :map]
+;; Schema (input signature)
+[:or
+ [:tuple [:= ::manse/results]]
+ [:tuple [:= ::manse/results] :keyword]]
 
-;; Handler
-(fn [dispatch-data] (:manse/results dispatch-data))
+;; Usage
+[::manse/results]           ;; returns vector of result maps
+[::manse/results :users/id] ;; returns vector of id values
 ```
 
 ### `::manse/result`
 
-Returns single result map (or nil) from most recent `::manse/execute-one`.
+Returns single result map (or nil) from most recent `::manse/execute-one`. Supports optional key extraction.
 
 ```clojure
-;; Schema
-[:? :map]
+;; Schema (input signature)
+[:or
+ [:tuple [:= ::manse/result]]
+ [:tuple [:= ::manse/result] :keyword]]
 
-;; Handler
-(fn [dispatch-data] (:manse/result dispatch-data))
+;; Usage
+[::manse/result]      ;; returns full result map
+[::manse/result :id]  ;; returns value at :id key
 ```
 
 ### `::manse/reducible`
@@ -182,11 +190,11 @@ Returns single result map (or nil) from most recent `::manse/execute-one`.
 Returns reducible from most recent `::manse/plan`.
 
 ```clojure
-;; Schema
-[:fn reducible?]
+;; Schema (input signature)
+[:tuple [:= ::manse/reducible]]
 
-;; Handler
-(fn [dispatch-data] (:manse/reducible dispatch-data))
+;; Usage
+[::manse/reducible]
 ```
 
 ## Connectable Override
@@ -280,6 +288,4 @@ All effects accept an optional `:connectable` in the opts map to override the re
 
 1. **Nested transaction semantics:** Should nested `::with-transaction` create savepoints, or reuse the outer transaction? Current implementation reuses the outer connection via `::manse/connectable` in dispatch-data.
 
-2. **Result placeholder scoping:** Currently `::results` returns the most recent result from dispatch-data. Indexed access could be added as a future enhancement.
-
-3. **Plan consumption:** Currently `::manse/plan` dispatches continuation immediately with the reducible. Users should be aware that the reducible holds a connection open until fully reduced.
+2. **Plan consumption:** Currently `::manse/plan` dispatches continuation immediately with the reducible. Users should be aware that the reducible holds a connection open until fully reduced.
