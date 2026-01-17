@@ -9,7 +9,7 @@
   {:extra-paths ["dev/src/clj" "dev/resources"]
    :extra-deps {djblue/portal {:mvn/version "0.62.2"}
                 io.github.tonsky/clj-reload {:mvn/version "1.0.0"}
-                io.github.brianium/sandestin {:git/tag "v0.3.0" :git/sha "2be6acc"}
+                io.github.brianium/sandestin {:git/tag "v0.4.0" :git/sha "7d29c81"}
                 org.xerial/sqlite-jdbc {:mvn/version "3.51.1.0"}
                 org.postgresql/postgresql {:mvn/version "42.7.8"}}
    :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
@@ -17,7 +17,7 @@
   :test
   {:extra-paths ["test/src/clj" "test/resources"]
    :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
-                io.github.brianium/sandestin {:git/tag "v0.3.0" :git/sha "2be6acc"}
+                io.github.brianium/sandestin {:git/tag "v0.4.0" :git/sha "7d29c81"}
                 org.xerial/sqlite-jdbc {:mvn/version "3.51.1.0"}}
    :jvm-opts ["--enable-native-access=ALL-UNNAMED"]
    :main-opts ["-m" "cognitect.test-runner"]
