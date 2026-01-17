@@ -7,7 +7,7 @@ A [Sandestin](https://github.com/brianium/sandestin) library wrapping [next.jdbc
 ```clojure
 ;; deps.edn
 {:deps
- {io.github.brianium/manse {:git/tag "v0.1.0" :git/sha "9cfce36"}}}
+ {io.github.brianium/manse {:git/tag "v0.2.0" :git/sha "2f29123"}}}
 ```
 
 ## Quick Start
